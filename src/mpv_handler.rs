@@ -125,7 +125,7 @@ impl MpvHandlerBuilder {
     ///
     /// For additional information, see examples/sdl2.rs for a basic implementation with a sdl2 opengl context
     #[must_use]
-    pub fn build_with_gl(mut self,
+    pub fn build_with_gl(self,
                          get_proc_address: Option<GetProcAddressFn>,
                          get_proc_address_ctx: *mut ::std::os::raw::c_void) -> Result<Box<MpvHandlerWithGl>> {
         let mpv_handler = self.build()?;
