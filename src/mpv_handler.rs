@@ -73,14 +73,14 @@ impl MpvHandlerBuilder {
     /// // set other options
     /// // Build the MpvHandler later
     /// ```
-    #[cfg_attr(feature = "clippy", allow(temporary_cstring_as_ptr))]
     pub fn set_option<T : MpvFormat>(&mut self, property: &str, option: T) -> Result<()> {
         let mut ret = 0 ;
         let format = T::get_mpv_format();
         option.call_as_c_void(|ptr:*mut c_void|{
             ret = unsafe {
+                let property = ffi::CString::new(property).unwrap();
                 mpv_set_option(self.handle,
-                               ffi::CString::new(property).unwrap().as_ptr(),
+                               property.as_ptr(),
                                format,
                                ptr)
             }
@@ -125,7 +125,7 @@ impl MpvHandlerBuilder {
     ///
     /// For additional information, see examples/sdl2.rs for a basic implementation with a sdl2 opengl context
     #[must_use]
-    pub fn build_with_gl(mut self,
+    pub fn build_with_gl(self,
                          get_proc_address: Option<GetProcAddressFn>,
                          get_proc_address_ctx: *mut ::std::os::raw::c_void) -> Result<Box<MpvHandlerWithGl>> {
         let mpv_handler = self.build()?;
@@ -257,14 +257,14 @@ impl MpvHandlerWithGl {
 impl MpvHandler {
 
     /// Set a property synchronously
-    #[cfg_attr(feature = "clippy", allow(temporary_cstring_as_ptr))]
     pub fn set_property<T : MpvFormat>(&mut self, property: &str, value : T) -> Result<()>{
         let mut ret = 0 ;
         let format = T::get_mpv_format();
         value.call_as_c_void(|ptr:*mut c_void|{
             ret = unsafe {
+                let property = ffi::CString::new(property).unwrap();
                 mpv_set_property(self.handle,
-                                 ffi::CString::new(property).unwrap().as_ptr(),
+                                 property.as_ptr(),
                                  format,
                                  ptr)
             }
@@ -273,16 +273,16 @@ impl MpvHandler {
     }
 
     /// Set a property asynchronously
-    #[cfg_attr(feature = "clippy", allow(temporary_cstring_as_ptr))]
     pub fn set_property_async<T : MpvFormat>(&mut self, property: &str, value : T, userdata:u32) -> Result<()>{
         let userdata = userdata as ::std::os::raw::c_ulong;
         let mut ret = 0 ;
         let format = T::get_mpv_format();
         value.call_as_c_void(|ptr:*mut c_void|{
             ret = unsafe {
+                let property = ffi::CString::new(property).unwrap();
                 mpv_set_property_async(self.handle,
                                        userdata,
-                                       ffi::CString::new(property).unwrap().as_ptr(),
+                                       property.as_ptr(),
                                        format,
                                        ptr)
             }
@@ -291,14 +291,14 @@ impl MpvHandler {
     }
 
     /// Get a property synchronously
-    #[cfg_attr(feature = "clippy", allow(temporary_cstring_as_ptr))]
     pub fn get_property<T : MpvFormat>(&self, property: &str) -> Result<T> {
         let mut ret = 0 ;
         let format = T::get_mpv_format();
         let result = T::get_from_c_void(|ptr:*mut c_void|{
             ret = unsafe {
+                let property = ffi::CString::new(property).unwrap();
                 mpv_get_property(self.handle,
-                                 ffi::CString::new(property).unwrap().as_ptr(),
+                                 property.as_ptr(),
                                  format,
                                  ptr)
             }
@@ -307,13 +307,13 @@ impl MpvHandler {
     }
 
     /// Get a property asynchronously
-    #[cfg_attr(feature = "clippy", allow(temporary_cstring_as_ptr))]
     pub fn get_property_async<T : MpvFormat>(&self, property: &str, userdata :u32) -> Result<()> {
         let userdata = userdata as ::std::os::raw::c_ulong;
         let ret = unsafe {
+            let property = ffi::CString::new(property).unwrap();
             mpv_get_property_async(self.handle,
                                    userdata,
-                                   ffi::CString::new(property).unwrap().as_ptr(),
+                                   property.as_ptr(),
                                    T::get_mpv_format())
         };
         ret_to_result(ret,())
@@ -329,14 +329,14 @@ impl MpvHandler {
     ///
     /// It is preferred that you initialize your options with the Builder instead
     ///
-    #[cfg_attr(feature = "clippy", allow(temporary_cstring_as_ptr))]
     pub fn set_option<T : MpvFormat>(&mut self, property: &str, option: T) -> Result<()> {
         let mut ret = 0 ;
         let format = T::get_mpv_format();
         option.call_as_c_void(|ptr:*mut c_void|{
             ret = unsafe {
+                let property = ffi::CString::new(property).unwrap();
                 mpv_set_option(self.handle,
-                                 ffi::CString::new(property).unwrap().as_ptr(),
+                                 property.as_ptr(),
                                  format,
                                  ptr)
             }
@@ -398,13 +398,13 @@ impl MpvHandler {
     }
 
     /// Observe a property change. The property change will be returned via an Event PropertyChange
-    #[cfg_attr(feature = "clippy", allow(temporary_cstring_as_ptr))]
     pub fn observe_property<T:MpvFormat>(&mut self,name:&str,userdata:u32) -> Result<()>{
         let userdata = userdata as ::std::os::raw::c_ulong;
         let ret = unsafe {
+            let name = ffi::CString::new(name).unwrap();
             mpv_observe_property(self.handle,
                                  userdata,
-                                 ffi::CString::new(name).unwrap().as_ptr(),
+                                 name.as_ptr(),
                                  T::get_mpv_format())
         };
         ret_to_result(ret,())
