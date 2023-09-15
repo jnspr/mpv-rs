@@ -241,6 +241,64 @@ impl MpvHandlerWithGl {
         ret_to_result(ret, ())
     }
 
+    /// Render video (non-blocking)
+    ///
+    /// The video will use the full provided framebuffer. Options like "panscan" are
+    /// applied to determine which part of the video should be visible and how the
+    /// video should be scaled. You can change these options at runtime by using the
+    /// mpv property API.
+    ///
+    /// fbo is the framebuffer object to render on. Because the renderer might
+    /// manage multiple FBOs internally for the purpose of video
+    /// postprocessing, it will always bind and unbind FBOs itself. If
+    /// you want mpv to render on the main framebuffer, pass 0.
+    ///
+    /// width is the width of the framebuffer. This is either the video size if the fbo
+    /// parameter is 0, or the allocated size of the texture backing the
+    /// fbo. The renderer will always use the full size of the fbo.
+    ///
+    /// height is the height of the framebuffer. Same as with the w parameter, except
+    /// that this parameter can be negative. In this case, the video
+    /// frame will be rendered flipped.
+    ///
+    /// # Warning
+    /// 
+    /// When not waiting for the frame, this can lead to A/V sync being slightly off.
+    /// Read the documentation of `MPV_RENDER_PARAM_BLOCK_FOR_TARGET_TIME` before using this.
+    ///
+    /// # Errors
+    ///
+    /// If the external video module has not been configured correctly, libmpv can send various
+    /// errors such as MPV_ERROR_UNSUPPORTED
+    ///
+    pub fn draw_nonblock(&mut self, fbo: i32, width: i32, heigth: i32) -> Result<()> {
+        self.update_available.store(false,Ordering::Relaxed) ;
+        let ret = unsafe {
+            let mut opengl_params = mpv_opengl_fbo {
+                w: width,
+                h: heigth,
+                fbo,
+                internal_format: 0
+            };
+            let mut render_params: [mpv_render_param; 3] = [
+                mpv_render_param {
+                    type_: mpv_render_param_type::MPV_RENDER_PARAM_OPENGL_FBO,
+                    data: &mut opengl_params as *mut _ as *mut c_void
+                },
+                mpv_render_param {
+                    type_: mpv_render_param_type::MPV_RENDER_PARAM_BLOCK_FOR_TARGET_TIME,
+                    data: &mut 0 as *mut _ as *mut c_void
+                },
+                mpv_render_param {
+                    type_: mpv_render_param_type::MPV_RENDER_PARAM_INVALID,
+                    data: null_mut()
+                }
+            ];
+            mpv_render_context_render(self.render_context, &mut render_params as *mut _)
+        };
+        ret_to_result(ret, ())
+    }
+
     unsafe extern "C" fn update_draw(cb_ctx: *mut ::std::os::raw::c_void) {
         let ptr = cb_ctx as *mut MpvHandlerWithGl ;
         assert!(!ptr.is_null());
